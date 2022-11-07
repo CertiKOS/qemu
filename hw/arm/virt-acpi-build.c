@@ -440,11 +440,11 @@ build_iort(GArray *table_data, BIOSLinker *linker, VirtMachineState *vms)
 }
 
 static void
-build_spcr(GArray *table_data, BIOSLinker *linker, VirtMachineState *vms)
+build_spcr(GArray *table_data, BIOSLinker *linker, VirtMachineState *vms, int uart)
 {
     AcpiSerialPortConsoleRedirection *spcr;
-    const MemMapEntry *uart_memmap = &vms->memmap[VIRT_UART];
-    int irq = vms->irqmap[VIRT_UART] + ARM_SPI_BASE;
+    const MemMapEntry *uart_memmap = &vms->memmap[uart];
+    int irq = vms->irqmap[uart] + ARM_SPI_BASE;
     int spcr_start = table_data->len;
 
     spcr = acpi_data_push(table_data, sizeof(*spcr));
@@ -706,6 +706,16 @@ build_dsdt(GArray *table_data, BIOSLinker *linker, VirtMachineState *vms)
     acpi_dsdt_add_cpus(scope, vms);
     acpi_dsdt_add_uart(scope, &memmap[VIRT_UART],
                        (irqmap[VIRT_UART] + ARM_SPI_BASE));
+    acpi_dsdt_add_uart(scope, &memmap[VIRT_UART1],
+                       (irqmap[VIRT_UART1] + ARM_SPI_BASE));
+    acpi_dsdt_add_uart(scope, &memmap[VIRT_UART2],
+                       (irqmap[VIRT_UART2] + ARM_SPI_BASE));
+    acpi_dsdt_add_uart(scope, &memmap[VIRT_UART3],
+                       (irqmap[VIRT_UART3] + ARM_SPI_BASE));
+    acpi_dsdt_add_uart(scope, &memmap[VIRT_UART4],
+                       (irqmap[VIRT_UART4] + ARM_SPI_BASE));
+    acpi_dsdt_add_uart(scope, &memmap[VIRT_UART5],
+                       (irqmap[VIRT_UART5] + ARM_SPI_BASE));
     if (vmc->acpi_expose_flash) {
         acpi_dsdt_add_flash(scope, &memmap[VIRT_FLASH]);
     }
@@ -811,7 +821,25 @@ void virt_acpi_build(VirtMachineState *vms, AcpiBuildTables *tables)
     }
 
     acpi_add_table(table_offsets, tables_blob);
-    build_spcr(tables_blob, tables->linker, vms);
+    build_spcr(tables_blob, tables->linker, vms, VIRT_UART);
+
+    acpi_add_table(table_offsets, tables_blob);
+    build_spcr(tables_blob, tables->linker, vms, VIRT_UART1);
+
+    acpi_add_table(table_offsets, tables_blob);
+    build_spcr(tables_blob, tables->linker, vms, VIRT_UART2);
+
+    acpi_add_table(table_offsets, tables_blob);
+    build_spcr(tables_blob, tables->linker, vms, VIRT_UART2);
+
+    acpi_add_table(table_offsets, tables_blob);
+    build_spcr(tables_blob, tables->linker, vms, VIRT_UART3);
+
+    acpi_add_table(table_offsets, tables_blob);
+    build_spcr(tables_blob, tables->linker, vms, VIRT_UART4);
+
+    acpi_add_table(table_offsets, tables_blob);
+    build_spcr(tables_blob, tables->linker, vms, VIRT_UART5);
 
     if (vms->ras) {
         build_ghes_error_table(tables->hardware_errors, tables->linker);
