@@ -895,8 +895,17 @@ static void create_uart(const VirtMachineState *vms, int uart,
 
         qemu_fdt_setprop_string(ms->fdt, "/secure-chosen", "stdout-path",
                                 nodename);
-    } else {
+    } else if(uart == VIRT_UART1 || uart == VIRT_UART2) {
+        /* SECURE WORLD ONLY */
         qemu_fdt_setprop_string(ms->fdt, nodename, "status", "disabled");
+        qemu_fdt_setprop_string(ms->fdt, nodename, "secure-status", "okay");
+    } else if(uart == VIRT_UART3 || uart == VIRT_UART4) {
+        /* NORMAL WORLD ONLY */
+        qemu_fdt_setprop_string(ms->fdt, nodename, "status", "okay");
+        qemu_fdt_setprop_string(ms->fdt, nodename, "secure-status", "disabled");
+    } else {
+        /* PUBLIC */
+        qemu_fdt_setprop_string(ms->fdt, nodename, "status", "okay");
         qemu_fdt_setprop_string(ms->fdt, nodename, "secure-status", "okay");
     }
 
