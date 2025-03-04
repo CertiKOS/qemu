@@ -39,7 +39,7 @@ struct PL011State {
     uint32_t dmacr;
     uint32_t int_enabled;
     uint32_t int_level;
-    uint32_t read_fifo[16];
+    uint32_t read_fifo[2048];
     uint32_t ilpr;
     uint32_t ibrd;
     uint32_t fbrd;

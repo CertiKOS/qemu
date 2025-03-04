@@ -154,15 +154,20 @@ static const MemMapEntry base_memmap[] = {
     [VIRT_NVDIMM_ACPI] =        { 0x09090000, NVDIMM_ACPI_IO_LEN},
     [VIRT_PVTIME] =             { 0x090a0000, 0x00010000 },
     [VIRT_SECURE_GPIO] =        { 0x090b0000, 0x00001000 },
+    [VIRT_UART1] =              { 0x090c0000, 0x00001000 },
+    [VIRT_UART2] =              { 0x090d0000, 0x00001000 },
+    [VIRT_UART3] =              { 0x090e0000, 0x00001000 },
+    [VIRT_UART4] =              { 0x090f0000, 0x00001000 },
+    [VIRT_UART5] =              { 0x09100000, 0x00001000 },
     [VIRT_MMIO] =               { 0x0a000000, 0x00000200 },
     /* ...repeating for a total of NUM_VIRTIO_TRANSPORTS, each of that size */
     [VIRT_PLATFORM_BUS] =       { 0x0c000000, 0x02000000 },
-    [VIRT_SECURE_MEM] =         { 0x0e000000, 0x01000000 },
-    [VIRT_PCIE_MMIO] =          { 0x10000000, 0x2eff0000 },
-    [VIRT_PCIE_PIO] =           { 0x3eff0000, 0x00010000 },
-    [VIRT_PCIE_ECAM] =          { 0x3f000000, 0x01000000 },
+    [VIRT_SECURE_MEM] =         { 0x0e000000, 0x12000000 },
+    [VIRT_PCIE_MMIO] =          { 0x20000000, 0x2eff0000 },
+    [VIRT_PCIE_PIO] =           { 0x4eff0000, 0x00010000 },
+    [VIRT_PCIE_ECAM] =          { 0x4f000000, 0x01000000 },
     /* Actual RAM size depends on initial RAM and device memory settings */
-    [VIRT_MEM] =                { GiB, LEGACY_RAMLIMIT_BYTES },
+    [VIRT_MEM] =                { 0x50000000, LEGACY_RAMLIMIT_BYTES },
 };
 
 /*
@@ -190,6 +195,11 @@ static const int a15irqmap[] = {
     [VIRT_GPIO] = 7,
     [VIRT_SECURE_UART] = 8,
     [VIRT_ACPI_GED] = 9,
+    [VIRT_UART1] = 10,
+    [VIRT_UART2] = 11,
+    [VIRT_UART3] = 12,
+    [VIRT_UART4] = 13,
+    [VIRT_UART5] = 14,
     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
@@ -846,6 +856,9 @@ static void create_uart(const VirtMachineState *vms, int uart,
     hwaddr base = vms->memmap[uart].base;
     hwaddr size = vms->memmap[uart].size;
     int irq = vms->irqmap[uart];
+
+    if(chr == NULL) return;
+
     const char compat[] = "arm,pl011\0arm,primecell";
     const char clocknames[] = "uartclk\0apb_pclk";
     DeviceState *dev = qdev_new(TYPE_PL011);
@@ -875,13 +888,16 @@ static void create_uart(const VirtMachineState *vms, int uart,
 
     if (uart == VIRT_UART) {
         qemu_fdt_setprop_string(ms->fdt, "/chosen", "stdout-path", nodename);
-    } else {
+    } else if (uart == VIRT_SECURE_UART) {
         /* Mark as not usable by the normal world */
         qemu_fdt_setprop_string(ms->fdt, nodename, "status", "disabled");
         qemu_fdt_setprop_string(ms->fdt, nodename, "secure-status", "okay");
 
         qemu_fdt_setprop_string(ms->fdt, "/secure-chosen", "stdout-path",
                                 nodename);
+    } else {
+        qemu_fdt_setprop_string(ms->fdt, nodename, "status", "disabled");
+        qemu_fdt_setprop_string(ms->fdt, nodename, "secure-status", "okay");
     }
 
     g_free(nodename);
@@ -2223,6 +2239,11 @@ static void machvirt_init(MachineState *machine)
     fdt_add_pmu_nodes(vms);
 
     create_uart(vms, VIRT_UART, sysmem, serial_hd(0));
+    create_uart(vms, VIRT_UART1, sysmem, serial_hd(2));
+    create_uart(vms, VIRT_UART2, sysmem, serial_hd(3));
+    create_uart(vms, VIRT_UART3, sysmem, serial_hd(4));
+    create_uart(vms, VIRT_UART4, sysmem, serial_hd(5));
+    create_uart(vms, VIRT_UART5, sysmem, serial_hd(6));
 
     if (vms->secure) {
         create_secure_ram(vms, secure_sysmem, secure_tag_sysmem);
